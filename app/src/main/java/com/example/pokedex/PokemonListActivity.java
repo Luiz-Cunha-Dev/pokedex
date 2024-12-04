@@ -1,10 +1,16 @@
 package com.example.pokedex;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.ContentValues;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +20,7 @@ import android.widget.ImageButton;
 import android.widget.Toast;
 
 import com.example.pokedex.adapter.PokemonAdapter;
+import com.example.pokedex.api.Gemini;
 import com.example.pokedex.api.PokemonApi;
 import com.example.pokedex.model.PokemonFormResponse;
 import com.example.pokedex.model.PokemonListResponse;
@@ -25,19 +32,22 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
 public class PokemonListActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private RecyclerView.OnScrollListener scrollListener;
-
     private EditText inputSearch;
-
     private ImageButton searchButton;
-
     private PokemonAdapter adapter;
-
     private List<String> pokemonNames = new ArrayList<>();
     private List<PokemonFormResponse> pokemonFormList = new ArrayList<>();
+    private Uri selectedImageUri;
+    private Uri photoUri;
+    private ActivityResultLauncher<Intent> selectImageLauncher;
+    private ActivityResultLauncher<Uri> captureImageLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,8 +62,26 @@ public class PokemonListActivity extends AppCompatActivity {
         adapter = new PokemonAdapter();
         recyclerView.setAdapter(adapter);
 
-        fetchPokemonList(0, 10);
+        fetchPokemonList(0, 20);
         addScrollListener();
+
+        // Initialize ActivityResultLauncher
+        selectImageLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        selectedImageUri = result.getData().getData();
+                        sendImageToGemini(selectedImageUri);
+                    }
+                });
+
+        captureImageLauncher = registerForActivityResult(
+                new ActivityResultContracts.TakePicture(),
+                result -> {
+                    if (result) {
+                        sendImageToGemini(photoUri);
+                    }
+                });
 
         // Configurar o listener para o botão Enter do teclado
         inputSearch.setOnEditorActionListener((textView, actionId, event) -> {
@@ -67,9 +95,25 @@ public class PokemonListActivity extends AppCompatActivity {
             }
             return false;
         });
-
     }
 
+    private void sendImageToGemini(Uri imageUri) {
+        Gemini gemini = new Gemini();
+        gemini.identifyPokemonInImage(imageUri, this, new Gemini.PokemonIdentificationCallback() {
+            @Override
+            public void onSuccess(String pokemonName) {
+                runOnUiThread(() -> {
+                    inputSearch.setText(pokemonName.trim());
+                    searchPokemonByNameOrId(searchButton);
+                });
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                runOnUiThread(() -> Toast.makeText(PokemonListActivity.this, "Failed to identify Pokémon: " + t.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+        });
+    }
 
 
     private void setupUI(View view) {
@@ -108,7 +152,7 @@ public class PokemonListActivity extends AppCompatActivity {
                     super.onScrolled(recyclerView, dx, dy);
                     if (!recyclerView.canScrollVertically(1)) {
                         // Carrega mais 10 Pokémons
-                        fetchPokemonList(pokemonFormList.size(), 10);
+                        fetchPokemonList(pokemonFormList.size(), 20);
                     }
                 }
             };
@@ -166,7 +210,7 @@ public class PokemonListActivity extends AppCompatActivity {
                         adapter.updatePokemonList(pokemonFormList);
                     }
                 } else {
-                    Toast.makeText(PokemonListActivity.this, "Erro ao carregar dados", Toast.LENGTH_SHORT).show();
+                    Log.e("PokemonApi", "Erro ao buscar detalhes do Pokémon: " + name);
                 }
             }
 
@@ -184,7 +228,7 @@ public class PokemonListActivity extends AppCompatActivity {
         if (search.isEmpty()) {
             pokemonFormList.clear();
             pokemonNames.clear();
-            fetchPokemonList(0, 10);
+            fetchPokemonList(0, 20);
 
             addScrollListener();
         } else {
@@ -201,18 +245,27 @@ public class PokemonListActivity extends AppCompatActivity {
                         pokemonFormList.add(pokemonForm);
                         adapter.updatePokemonList(pokemonFormList);
                     } else {
-                        Toast.makeText(PokemonListActivity.this, "Erro ao carregar dados", Toast.LENGTH_SHORT).show();
+                        Log.e("PokemonApi", "Erro ao buscar detalhes do Pokémon: " + search);
                     }
                 }
 
                 @Override
                 public void onFailure(Call<PokemonFormResponse> call, Throwable t) {
                     Log.e("PokemonApi", "Erro: " + t.getMessage());
-                    Toast.makeText(PokemonListActivity.this, "Falha na conexão", Toast.LENGTH_SHORT).show();
                 }
             });
         }
     }
 
 
+    public void getImageFromGallery(View view) {
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType("image/*");
+        selectImageLauncher.launch(intent);
+    }
+
+    public void captureImage(View view) {
+        photoUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new ContentValues());
+        captureImageLauncher.launch(photoUri);
+    }
 }

@@ -6,6 +6,8 @@ import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.pokedex.api.Gemini;
+
 public class HomeActivity extends AppCompatActivity {
 
     @Override
@@ -15,6 +17,7 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     public void openPokemonListActivity(View view) {
+        Gemini gemini = new Gemini();
         Intent intent = new Intent(this, PokemonListActivity.class);
         startActivity(intent);
     }
