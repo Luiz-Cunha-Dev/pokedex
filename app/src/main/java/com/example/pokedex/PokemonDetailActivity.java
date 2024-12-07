@@ -14,6 +14,7 @@ import com.example.pokedex.api.PokemonApi;
 import com.example.pokedex.model.Pokemon;
 import com.example.pokedex.model.PokemonEvolutionChain;
 import com.example.pokedex.model.PokemonSpecies;
+import com.example.pokedex.utils.PokemonTypeColors;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import java.util.List;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import android.graphics.Color;
 
 public class PokemonDetailActivity extends AppCompatActivity {
 
@@ -33,6 +35,8 @@ public class PokemonDetailActivity extends AppCompatActivity {
     private MediaPlayer pokemonSoundPlayer;
 
     private ImageView arrow1, arrow2;
+
+    private static PokemonTypeColors pokemonTypeColors = new PokemonTypeColors();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,7 +88,7 @@ public class PokemonDetailActivity extends AppCompatActivity {
                     for (PokemonSpecies.FlavorTextEntry flavorTextEntry : pokemonSpecies.getFlavorTextEntries()) {
                         if ("en".equals(flavorTextEntry.getLanguage().getName())) {
                             //retirar as quebras de linha e depois adicionar uma quebra de linha depois de cada .
-                            String description = flavorTextEntry.getFlavorText().replace("\n", "").replace("\f", "").replace("\r", "").replace("\t", "");
+                            String description = flavorTextEntry.getFlavorText().replace("\n", "");
                             description = description.replaceAll("\\.", ".\n");
                             description_text.setText(description);
                             break;
@@ -215,12 +219,16 @@ public class PokemonDetailActivity extends AppCompatActivity {
         if (!pokemon.getTypes().isEmpty()) {
             pokemonType1TextView.setText(pokemon.getTypes().get(0).getTypeInfo().getName());
             pokemonType1TextView.setVisibility(View.VISIBLE);
+            pokemonType1TextView.setTextColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(pokemon.getTypes().get(0).getTypeInfo().getName())[1]));
+            pokemonType1TextView.setBackgroundColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(pokemon.getTypes().get(0).getTypeInfo().getName())[0]));
         } else {
             pokemonType1TextView.setVisibility(View.GONE);
         }
 
         if (pokemon.getTypes().size() > 1) {
             pokemonType2TextView.setText(pokemon.getTypes().get(1).getTypeInfo().getName());
+            pokemonType2TextView.setTextColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(pokemon.getTypes().get(1).getTypeInfo().getName())[1]));
+            pokemonType2TextView.setBackgroundColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(pokemon.getTypes().get(1).getTypeInfo().getName())[0]));
             pokemonType2TextView.setVisibility(View.VISIBLE);
         } else {
             pokemonType2TextView.setVisibility(View.GONE);

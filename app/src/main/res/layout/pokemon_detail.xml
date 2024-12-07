@@ -67,6 +67,12 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/header" />
 
+        <!-- Tipos do Pokémon -->
+
+        <!-- Altura e Peso do Pokémon -->
+
+        <!-- Habilidades do Pokémon -->
+
         <TextView
             android:id="@+id/pokemon_name_detail"
             android:layout_width="wrap_content"
@@ -78,40 +84,6 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/pokemon_image_detail" />
-
-        <!-- Tipos do Pokémon -->
-
-        <!-- Altura e Peso do Pokémon -->
-
-        <!-- Habilidades do Pokémon -->
-
-        <LinearLayout
-            android:id="@+id/linearLayout"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/pokemon_name_detail">
-
-            <TextView
-                android:id="@+id/pokemon_type1_detail"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:padding="8dp"
-                android:text="..."
-                android:textColor="@color/black" />
-
-            <TextView
-                android:id="@+id/pokemon_type2_detail"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="8dp"
-                android:text="..."
-                android:textColor="@color/black" />
-        </LinearLayout>
 
         <TextView
             android:id="@+id/pokemon_weight_detail"
@@ -181,7 +153,7 @@
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/linearLayout" />
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout2" />
 
         <LinearLayout
             android:id="@+id/pokemon_stats_detail"
@@ -227,9 +199,14 @@
             android:id="@+id/pokemon_description_detail"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
             android:layout_marginTop="16dp"
+            android:layout_marginRight="16dp"
             android:gravity="center|center_horizontal|center_vertical"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
             android:text="..."
+            android:textColor="@color/black"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/pokemon_abilities_label" />
@@ -326,5 +303,48 @@
             </LinearLayout>
 
         </LinearLayout>
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guideline2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.5" />
+
+        <LinearLayout
+            android:id="@+id/linearLayout2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center|center_horizontal|center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/pokemon_name_detail">
+
+            <TextView
+                android:id="@+id/pokemon_type1_detail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="12dp"
+                android:padding="8dp"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:text="..."
+                android:textColor="@color/black" />
+
+            <TextView
+                android:id="@+id/pokemon_type2_detail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="12dp"
+                android:padding="8dp"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:text="..."
+                android:textColor="@color/black" />
+
+        </LinearLayout>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

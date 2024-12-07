@@ -15,13 +15,16 @@ import com.bumptech.glide.Glide;
 import com.example.pokedex.R;
 import com.example.pokedex.model.PokemonFormResponse;
 import com.example.pokedex.PokemonDetailActivity;
+import com.example.pokedex.utils.PokemonTypeColors;
 
 import java.util.ArrayList;
 import java.util.List;
+import android.graphics.Color;
 
 public class PokemonAdapter extends RecyclerView.Adapter<PokemonAdapter.PokemonViewHolder> {
 
     private List<PokemonFormResponse> pokemonFormList = new ArrayList<>();
+    private static PokemonTypeColors pokemonTypeColors = new PokemonTypeColors();
 
     @NonNull
     @Override
@@ -84,11 +87,17 @@ public class PokemonAdapter extends RecyclerView.Adapter<PokemonAdapter.PokemonV
 
             if (types.size() == 1) {
                 pokemonType1.setText(types.get(0).getType().getName());
+                pokemonType1.setTextColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(types.get(0).getType().getName())[1]));
+                pokemonType1.setBackgroundColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(types.get(0).getType().getName())[0]));
                 pokemonType1.setVisibility(View.VISIBLE);
-                pokemonType2.setVisibility(View.GONE);
+                pokemonType2.setVisibility(View.INVISIBLE);
             } else {
                 pokemonType1.setText(types.get(0).getType().getName());
+                pokemonType1.setTextColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(types.get(0).getType().getName())[1]));
+                pokemonType1.setBackgroundColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(types.get(0).getType().getName())[0]));
                 pokemonType2.setText(types.get(1).getType().getName());
+                pokemonType2.setTextColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(types.get(1).getType().getName())[1]));
+                pokemonType2.setBackgroundColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(types.get(1).getType().getName())[0]));
                 pokemonType1.setVisibility(View.VISIBLE);
                 pokemonType2.setVisibility(View.VISIBLE);
             }

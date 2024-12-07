@@ -15,10 +15,12 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.example.pokedex.adapter.PokemonAdapter;
 import com.example.pokedex.api.Gemini;
 import com.example.pokedex.api.PokemonApi;
@@ -49,6 +51,8 @@ public class PokemonListActivity extends AppCompatActivity {
     private ActivityResultLauncher<Intent> selectImageLauncher;
     private ActivityResultLauncher<Uri> captureImageLauncher;
 
+    private ImageButton photoGalleryButton, photoCameraButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,6 +62,8 @@ public class PokemonListActivity extends AppCompatActivity {
         inputSearch = findViewById(R.id.input_search);
         searchButton = findViewById(R.id.search_button);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        photoCameraButton = findViewById(R.id.photo_camera_button);
+        photoGalleryButton = findViewById(R.id.photo_gallery_button);
 
         adapter = new PokemonAdapter();
         recyclerView.setAdapter(adapter);
@@ -71,6 +77,11 @@ public class PokemonListActivity extends AppCompatActivity {
                 result -> {
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                         selectedImageUri = result.getData().getData();
+                        //alterar a imagem do botão com a imagem de loading dentro de drawable
+                        Glide.with(this)
+                                .asGif()
+                                .load(R.drawable.loading)
+                                .into(photoGalleryButton);
                         sendImageToGemini(selectedImageUri);
                     }
                 });
@@ -79,6 +90,10 @@ public class PokemonListActivity extends AppCompatActivity {
                 new ActivityResultContracts.TakePicture(),
                 result -> {
                     if (result) {
+                        Glide.with(this)
+                                .asGif()
+                                .load(R.drawable.loading)
+                                .into(photoCameraButton);
                         sendImageToGemini(photoUri);
                     }
                 });
@@ -105,12 +120,16 @@ public class PokemonListActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     inputSearch.setText(pokemonName.trim());
                     searchPokemonByNameOrId(searchButton);
+                    photoGalleryButton.setImageResource(R.drawable.baseline_crop_original_24);
+                    photoCameraButton.setImageResource(R.drawable.baseline_add_a_photo_24);
                 });
             }
 
             @Override
             public void onFailure(Throwable t) {
                 runOnUiThread(() -> Toast.makeText(PokemonListActivity.this, "Failed to identify Pokémon: " + t.getMessage(), Toast.LENGTH_SHORT).show());
+                photoGalleryButton.setImageResource(R.drawable.baseline_crop_original_24);
+                photoCameraButton.setImageResource(R.drawable.baseline_add_a_photo_24);
             }
         });
     }
@@ -226,11 +245,9 @@ public class PokemonListActivity extends AppCompatActivity {
         String search = inputSearch.getText().toString().toLowerCase();
 
         if (search.isEmpty()) {
-            pokemonFormList.clear();
-            pokemonNames.clear();
-            fetchPokemonList(0, 20);
+            resetSearch(view);
 
-            addScrollListener();
+
         } else {
             removeScrollListener();
 
@@ -255,6 +272,14 @@ public class PokemonListActivity extends AppCompatActivity {
                 }
             });
         }
+    }
+
+    public void resetSearch(View view) {
+        pokemonFormList.clear();
+        pokemonNames.clear();
+        inputSearch.setText("");
+        fetchPokemonList(0, 20);
+        addScrollListener();
     }
 
 
