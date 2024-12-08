@@ -8,7 +8,6 @@ public class PokemonTypeColors {
     public static Map<String, String[]> getTypeColors() {
         Map<String, String[]> typeColors = new HashMap<>();
 
-        // Tipos e cores (fundo, texto)
         typeColors.put("normal", new String[]{"#A8A878", "#000000"});
         typeColors.put("fire", new String[]{"#F08030", "#FFFFFF"});
         typeColors.put("water", new String[]{"#6890F0", "#FFFFFF"});

@@ -28,22 +28,26 @@ import android.graphics.Color;
 public class PokemonDetailActivity extends AppCompatActivity {
 
     private Pokemon pokemon;
-    private TextView description_text;
+    private TextView descriptionText;
     private ImageView pokemonEvolutionImageView1, pokemonEvolutionImageView2, pokemonEvolutionImageView3;
     private TextView pokemonEvolutionName1, pokemonEvolutionName2, pokemonEvolutionName3;
-
     private MediaPlayer pokemonSoundPlayer;
-
     private ImageView arrow1, arrow2;
-
-    private static PokemonTypeColors pokemonTypeColors = new PokemonTypeColors();
+    private static final PokemonTypeColors pokemonTypeColors = new PokemonTypeColors();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.pokemon_detail);
 
-        description_text = findViewById(R.id.pokemon_description_detail);
+        initializeViews();
+        String pokemonName = getIntent().getStringExtra("POKEMON_NAME");
+        fetchPokemonDetails(pokemonName);
+        fetchPokemonSpecies(pokemonName);
+    }
+
+    private void initializeViews() {
+        descriptionText = findViewById(R.id.pokemon_description_detail);
         pokemonEvolutionImageView1 = findViewById(R.id.pokemon_image_evolution1);
         pokemonEvolutionImageView2 = findViewById(R.id.pokemon_image_evolution2);
         pokemonEvolutionImageView3 = findViewById(R.id.pokemon_image_evolution3);
@@ -52,16 +56,10 @@ public class PokemonDetailActivity extends AppCompatActivity {
         pokemonEvolutionName3 = findViewById(R.id.pokemon_name_evolution3);
         arrow1 = findViewById(R.id.arrow1);
         arrow2 = findViewById(R.id.arrow2);
-
-        String pokemonName = getIntent().getStringExtra("POKEMON_NAME");
-
-        fetchPokemonDetails(pokemonName);
-        fetchPokemonSpecies(pokemonName);
     }
 
     private void fetchPokemonDetails(String pokemonName) {
-        Call<Pokemon> call = PokemonApi.getPokemonDetails(pokemonName);
-        call.enqueue(new Callback<Pokemon>() {
+        PokemonApi.getPokemonDetails(pokemonName).enqueue(new Callback<Pokemon>() {
             @Override
             public void onResponse(Call<Pokemon> call, Response<Pokemon> response) {
                 if (response.isSuccessful()) {
@@ -78,24 +76,12 @@ public class PokemonDetailActivity extends AppCompatActivity {
     }
 
     private void fetchPokemonSpecies(String pokemonName) {
-        Call<PokemonSpecies> call = PokemonApi.getPokemonSpecies(pokemonName);
-        call.enqueue(new Callback<PokemonSpecies>() {
+        PokemonApi.getPokemonSpecies(pokemonName).enqueue(new Callback<PokemonSpecies>() {
             @Override
             public void onResponse(Call<PokemonSpecies> call, Response<PokemonSpecies> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     PokemonSpecies pokemonSpecies = response.body();
-
-                    for (PokemonSpecies.FlavorTextEntry flavorTextEntry : pokemonSpecies.getFlavorTextEntries()) {
-                        if ("en".equals(flavorTextEntry.getLanguage().getName())) {
-                            //retirar as quebras de linha e depois adicionar uma quebra de linha depois de cada .
-                            String description = flavorTextEntry.getFlavorText().replace("\n", "");
-                            description = description.replaceAll("\\.", ".\n");
-                            description_text.setText(description);
-                            break;
-                        }
-                    }
-
-                    // Buscar a cadeia de evolução
+                    updateDescription(pokemonSpecies);
                     fetchPokemonEvolutionChain(pokemonSpecies.getEvolutionChain().getId());
                 }
             }
@@ -107,47 +93,24 @@ public class PokemonDetailActivity extends AppCompatActivity {
         });
     }
 
+    private void updateDescription(PokemonSpecies pokemonSpecies) {
+        for (PokemonSpecies.FlavorTextEntry flavorTextEntry : pokemonSpecies.getFlavorTextEntries()) {
+            if ("en".equals(flavorTextEntry.getLanguage().getName())) {
+                String description = flavorTextEntry.getFlavorText().replaceAll("\n", "");
+                descriptionText.setText(description);
+                break;
+            }
+        }
+    }
+
     private void fetchPokemonEvolutionChain(int id) {
-        Call<PokemonEvolutionChain> call = PokemonApi.getPokemonEvolutionChain(id);
-        call.enqueue(new Callback<PokemonEvolutionChain>() {
+        PokemonApi.getPokemonEvolutionChain(id).enqueue(new Callback<PokemonEvolutionChain>() {
             @Override
             public void onResponse(Call<PokemonEvolutionChain> call, Response<PokemonEvolutionChain> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<String> pokemonNames = new ArrayList<>();
-                    PokemonEvolutionChain chain = response.body();
                     extractPokemonNames(response.body().getChain(), pokemonNames);
-
-                    if(pokemonNames.size() == 1) {
-                        pokemonEvolutionName2.setVisibility(View.GONE);
-                        pokemonEvolutionImageView2.setVisibility(View.GONE);
-                        pokemonEvolutionName3.setVisibility(View.GONE);
-                        pokemonEvolutionImageView3.setVisibility(View.GONE);
-                        arrow1.setVisibility(View.GONE);
-                        arrow2.setVisibility(View.GONE);
-                    }
-                    else if(pokemonNames.size() == 2){
-                        pokemonEvolutionName3.setVisibility(View.GONE);
-                        pokemonEvolutionImageView3.setVisibility(View.GONE);
-                        arrow2.setVisibility(View.GONE);
-                    }
-
-                    // List de views para evoluções
-                    List<ImageView> evolutionImageViews = new ArrayList<>();
-                    evolutionImageViews.add(pokemonEvolutionImageView1);
-                    evolutionImageViews.add(pokemonEvolutionImageView2);
-                    evolutionImageViews.add(pokemonEvolutionImageView3);
-
-                    List<TextView> evolutionNameViews = new ArrayList<>();
-                    evolutionNameViews.add(pokemonEvolutionName1);
-                    evolutionNameViews.add(pokemonEvolutionName2);
-                    evolutionNameViews.add(pokemonEvolutionName3);
-
-                    // Atualizar as views com base no número de evoluções
-                    for (int i = 0; i < pokemonNames.size(); i++) {
-                        if (i < evolutionImageViews.size() && i < evolutionNameViews.size()) {
-                            updateEvolutionViews(pokemonNames.get(i), evolutionImageViews.get(i), evolutionNameViews.get(i));
-                        }
-                    }
+                    updateEvolutionViews(pokemonNames);
                 }
             }
 
@@ -163,7 +126,6 @@ public class PokemonDetailActivity extends AppCompatActivity {
             pokemonNames.add(chain.getSpecies().getName());
             extractEvolutions(chain, pokemonNames);
         }
-
     }
 
     private void extractEvolutions(PokemonEvolutionChain.Chain chain, List<String> pokemonNames) {
@@ -175,19 +137,27 @@ public class PokemonDetailActivity extends AppCompatActivity {
         }
     }
 
-    private void updateEvolutionViews(String pokemonName, ImageView imageView, TextView textView) {
-        Log.d("POKEDEX", "Carregando evolução: " + pokemonName);
-        Call<Pokemon> call = PokemonApi.getPokemonDetails(pokemonName);
-        call.enqueue(new Callback<Pokemon>() {
+    private void updateEvolutionViews(List<String> pokemonNames) {
+        List<ImageView> evolutionImageViews = List.of(pokemonEvolutionImageView1, pokemonEvolutionImageView2, pokemonEvolutionImageView3);
+        List<TextView> evolutionNameViews = List.of(pokemonEvolutionName1, pokemonEvolutionName2, pokemonEvolutionName3);
+
+        for (int i = 0; i < pokemonNames.size(); i++) {
+            if (i < evolutionImageViews.size() && i < evolutionNameViews.size()) {
+                updateEvolutionView(pokemonNames.get(i), evolutionImageViews.get(i), evolutionNameViews.get(i));
+            }
+        }
+
+        adjustEvolutionViewVisibility(pokemonNames.size());
+    }
+
+    private void updateEvolutionView(String pokemonName, ImageView imageView, TextView textView) {
+        PokemonApi.getPokemonDetails(pokemonName).enqueue(new Callback<Pokemon>() {
             @Override
             public void onResponse(Call<Pokemon> call, Response<Pokemon> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     Pokemon pokemonDetails = response.body();
-                    String imageUrl = pokemonDetails.getSprites().getFrontDefault();
                     textView.setText(pokemonName);
-                    Glide.with(imageView.getContext())
-                            .load(imageUrl)
-                            .into(imageView);
+                    Glide.with(imageView.getContext()).load(pokemonDetails.getSprites().getFrontDefault()).into(imageView);
                 } else {
                     Log.e("POKEDEX", "Erro ao carregar imagem para: " + pokemonName);
                 }
@@ -198,6 +168,21 @@ public class PokemonDetailActivity extends AppCompatActivity {
                 Log.e("POKEDEX", "Erro ao buscar detalhes do Pokémon: " + pokemonName, t);
             }
         });
+    }
+
+    private void adjustEvolutionViewVisibility(int size) {
+        if (size == 1) {
+            pokemonEvolutionName2.setVisibility(View.GONE);
+            pokemonEvolutionImageView2.setVisibility(View.GONE);
+            pokemonEvolutionName3.setVisibility(View.GONE);
+            pokemonEvolutionImageView3.setVisibility(View.GONE);
+            arrow1.setVisibility(View.GONE);
+            arrow2.setVisibility(View.GONE);
+        } else if (size == 2) {
+            pokemonEvolutionName3.setVisibility(View.GONE);
+            pokemonEvolutionImageView3.setVisibility(View.GONE);
+            arrow2.setVisibility(View.GONE);
+        }
     }
 
     private void updateUI() {
@@ -213,32 +198,41 @@ public class PokemonDetailActivity extends AppCompatActivity {
         TextView pokemonAttack = findViewById(R.id.pokemon_attack_detail);
 
         pokemonNameTextView.setText(pokemon.getName());
-        pokemonHeightTextView.setText("Height: " + pokemon.getHeight()/10.0 + "m");
-        pokemonWeightTextView.setText("Weight: " + pokemon.getWeight()/10.0 + "kg");
+        pokemonHeightTextView.setText("Height: " + pokemon.getHeight() / 10.0 + "m");
+        pokemonWeightTextView.setText("Weight: " + pokemon.getWeight() / 10.0 + "kg");
 
+        updatePokemonTypeViews(pokemonType1TextView, pokemonType2TextView);
+        updatePokemonImageView(pokemonImageView);
+        updatePokemonStats(pokemonHp, pokemonAttack);
+    }
+
+    private void updatePokemonTypeViews(TextView pokemonType1TextView, TextView pokemonType2TextView) {
         if (!pokemon.getTypes().isEmpty()) {
-            pokemonType1TextView.setText(pokemon.getTypes().get(0).getTypeInfo().getName());
-            pokemonType1TextView.setVisibility(View.VISIBLE);
-            pokemonType1TextView.setTextColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(pokemon.getTypes().get(0).getTypeInfo().getName())[1]));
-            pokemonType1TextView.setBackgroundColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(pokemon.getTypes().get(0).getTypeInfo().getName())[0]));
+            setPokemonTypeView(pokemonType1TextView, pokemon.getTypes().get(0).getTypeInfo().getName());
         } else {
             pokemonType1TextView.setVisibility(View.GONE);
         }
 
         if (pokemon.getTypes().size() > 1) {
-            pokemonType2TextView.setText(pokemon.getTypes().get(1).getTypeInfo().getName());
-            pokemonType2TextView.setTextColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(pokemon.getTypes().get(1).getTypeInfo().getName())[1]));
-            pokemonType2TextView.setBackgroundColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(pokemon.getTypes().get(1).getTypeInfo().getName())[0]));
-            pokemonType2TextView.setVisibility(View.VISIBLE);
+            setPokemonTypeView(pokemonType2TextView, pokemon.getTypes().get(1).getTypeInfo().getName());
         } else {
             pokemonType2TextView.setVisibility(View.GONE);
         }
+    }
 
+    private void setPokemonTypeView(TextView textView, String typeName) {
+        textView.setText(typeName);
+        textView.setTextColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(typeName)[1]));
+        textView.setBackgroundColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(typeName)[0]));
+        textView.setVisibility(View.VISIBLE);
+    }
+
+    private void updatePokemonImageView(ImageView pokemonImageView) {
         String imageUrl = pokemon.getSprites().getFrontDefault();
-        Glide.with(pokemonImageView.getContext())
-                .load(imageUrl)
-                .into(pokemonImageView);
+        Glide.with(pokemonImageView.getContext()).load(imageUrl).into(pokemonImageView);
+    }
 
+    private void updatePokemonStats(TextView pokemonHp, TextView pokemonAttack) {
         pokemonHp.setText("HP: " + pokemon.getStats().get(0).getBaseStat());
         pokemonAttack.setText("Attack: " + pokemon.getStats().get(1).getBaseStat());
     }

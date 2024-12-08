@@ -2,6 +2,7 @@ package com.example.pokedex.adapter;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,12 +20,11 @@ import com.example.pokedex.utils.PokemonTypeColors;
 
 import java.util.ArrayList;
 import java.util.List;
-import android.graphics.Color;
 
 public class PokemonAdapter extends RecyclerView.Adapter<PokemonAdapter.PokemonViewHolder> {
 
     private List<PokemonFormResponse> pokemonFormList = new ArrayList<>();
-    private static PokemonTypeColors pokemonTypeColors = new PokemonTypeColors();
+    private static final PokemonTypeColors pokemonTypeColors = new PokemonTypeColors();
 
     @NonNull
     @Override
@@ -52,10 +52,11 @@ public class PokemonAdapter extends RecyclerView.Adapter<PokemonAdapter.PokemonV
 
     static class PokemonViewHolder extends RecyclerView.ViewHolder {
 
-        private TextView pokemonNumber;
-        private TextView pokemonName;
-        private TextView pokemonType1, pokemonType2;
-        private ImageView pokemonImage;
+        private final TextView pokemonNumber;
+        private final TextView pokemonName;
+        private final TextView pokemonType1;
+        private final TextView pokemonType2;
+        private final ImageView pokemonImage;
 
         public PokemonViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -65,49 +66,40 @@ public class PokemonAdapter extends RecyclerView.Adapter<PokemonAdapter.PokemonV
             pokemonType2 = itemView.findViewById(R.id.pokemon_type2);
             pokemonImage = itemView.findViewById(R.id.pokemon_image);
 
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Context context = v.getContext();
-                    Intent intent = new Intent(context, PokemonDetailActivity.class);
-                    intent.putExtra("POKEMON_NAME", pokemonName.getText().toString());
-                    context.startActivity(intent);
-                }
+            itemView.setOnClickListener(v -> {
+                Context context = v.getContext();
+                Intent intent = new Intent(context, PokemonDetailActivity.class);
+                intent.putExtra("POKEMON_NAME", pokemonName.getText().toString());
+                context.startActivity(intent);
             });
         }
 
         public void bind(PokemonFormResponse pokemonForm) {
-            // Exibindo o número do Pokémon
             pokemonNumber.setText("Nº " + pokemonForm.getId());
-
             pokemonName.setText(pokemonForm.getName());
 
-            // Exibindo os tipos do Pokémon
             List<PokemonFormResponse.Type> types = pokemonForm.getTypes();
-
             if (types.size() == 1) {
-                pokemonType1.setText(types.get(0).getType().getName());
-                pokemonType1.setTextColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(types.get(0).getType().getName())[1]));
-                pokemonType1.setBackgroundColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(types.get(0).getType().getName())[0]));
-                pokemonType1.setVisibility(View.VISIBLE);
+                setType(pokemonType1, types.get(0));
                 pokemonType2.setVisibility(View.INVISIBLE);
             } else {
-                pokemonType1.setText(types.get(0).getType().getName());
-                pokemonType1.setTextColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(types.get(0).getType().getName())[1]));
-                pokemonType1.setBackgroundColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(types.get(0).getType().getName())[0]));
-                pokemonType2.setText(types.get(1).getType().getName());
-                pokemonType2.setTextColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(types.get(1).getType().getName())[1]));
-                pokemonType2.setBackgroundColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(types.get(1).getType().getName())[0]));
-                pokemonType1.setVisibility(View.VISIBLE);
+                setType(pokemonType1, types.get(0));
+                setType(pokemonType2, types.get(1));
                 pokemonType2.setVisibility(View.VISIBLE);
             }
 
-            // Usando Glide para carregar a imagem
             String imageUrl = pokemonForm.getSprites().getFrontDefault();
-            System.out.println(imageUrl);
             Glide.with(itemView.getContext())
                     .load(imageUrl)
                     .into(pokemonImage);
+        }
+
+        private void setType(TextView textView, PokemonFormResponse.Type type) {
+            String typeName = type.getType().getName();
+            textView.setText(typeName);
+            textView.setTextColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(typeName)[1]));
+            textView.setBackgroundColor(Color.parseColor(pokemonTypeColors.getTypeColors().get(typeName)[0]));
+            textView.setVisibility(View.VISIBLE);
         }
     }
 }

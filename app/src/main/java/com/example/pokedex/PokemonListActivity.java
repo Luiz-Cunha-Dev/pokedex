@@ -13,9 +13,7 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -34,13 +32,9 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-
 public class PokemonListActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
-    private RecyclerView.OnScrollListener scrollListener;
     private EditText inputSearch;
     private ImageButton searchButton;
     private PokemonAdapter adapter;
@@ -50,7 +44,6 @@ public class PokemonListActivity extends AppCompatActivity {
     private Uri photoUri;
     private ActivityResultLauncher<Intent> selectImageLauncher;
     private ActivityResultLauncher<Uri> captureImageLauncher;
-
     private ImageButton photoGalleryButton, photoCameraButton;
 
     @Override
@@ -58,26 +51,34 @@ public class PokemonListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.pokemon_list);
 
+        initializeViews();
+        setupRecyclerView();
+        setupActivityResultLaunchers();
+        setupSearchAction();
+        fetchPokemonList(0, 20);
+    }
+
+    private void initializeViews() {
         recyclerView = findViewById(R.id.pokemon_list);
         inputSearch = findViewById(R.id.input_search);
         searchButton = findViewById(R.id.search_button);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
         photoCameraButton = findViewById(R.id.photo_camera_button);
         photoGalleryButton = findViewById(R.id.photo_gallery_button);
+    }
 
+    private void setupRecyclerView() {
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new PokemonAdapter();
         recyclerView.setAdapter(adapter);
-
-        fetchPokemonList(0, 20);
         addScrollListener();
+    }
 
-        // Initialize ActivityResultLauncher
+    private void setupActivityResultLaunchers() {
         selectImageLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                         selectedImageUri = result.getData().getData();
-                        //alterar a imagem do botão com a imagem de loading dentro de drawable
                         Glide.with(this)
                                 .asGif()
                                 .load(R.drawable.loading)
@@ -97,8 +98,9 @@ public class PokemonListActivity extends AppCompatActivity {
                         sendImageToGemini(photoUri);
                     }
                 });
+    }
 
-        // Configurar o listener para o botão Enter do teclado
+    private void setupSearchAction() {
         inputSearch.setOnEditorActionListener((textView, actionId, event) -> {
             if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH
                     || actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE
@@ -106,7 +108,7 @@ public class PokemonListActivity extends AppCompatActivity {
                 searchPokemonByNameOrId(searchButton);
                 hideKeyboard(inputSearch);
                 inputSearch.clearFocus();
-                return true; // Indica que a ação foi tratada
+                return true;
             }
             return false;
         });
@@ -120,70 +122,33 @@ public class PokemonListActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     inputSearch.setText(pokemonName.trim());
                     searchPokemonByNameOrId(searchButton);
-                    photoGalleryButton.setImageResource(R.drawable.baseline_crop_original_24);
-                    photoCameraButton.setImageResource(R.drawable.baseline_add_a_photo_24);
+                    resetImageButtons();
                 });
             }
 
             @Override
             public void onFailure(Throwable t) {
                 runOnUiThread(() -> Toast.makeText(PokemonListActivity.this, "Failed to identify Pokémon: " + t.getMessage(), Toast.LENGTH_SHORT).show());
-                photoGalleryButton.setImageResource(R.drawable.baseline_crop_original_24);
-                photoCameraButton.setImageResource(R.drawable.baseline_add_a_photo_24);
+                resetImageButtons();
             }
         });
     }
 
-
-    private void setupUI(View view) {
-        // Listener para toques fora do EditText
-        if (!(view instanceof EditText)) {
-            view.setOnTouchListener((v, event) -> {
-                hideKeyboard(view);
-                inputSearch.clearFocus();
-                return false;
-            });
-        }
-
-        // Itera por todas as views dentro do layout
-        if (view instanceof ViewGroup) {
-            for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) {
-                View child = ((ViewGroup) view).getChildAt(i);
-                setupUI(child);
-            }
-        }
+    private void resetImageButtons() {
+        photoGalleryButton.setImageResource(R.drawable.baseline_crop_original_24);
+        photoCameraButton.setImageResource(R.drawable.baseline_add_a_photo_24);
     }
-
-
-    private void hideKeyboard(View view) {
-        if (view != null) {
-            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-        }
-    }
-
 
     private void addScrollListener() {
-        if (scrollListener == null) {
-            scrollListener = new RecyclerView.OnScrollListener() {
-                @Override
-                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-                    super.onScrolled(recyclerView, dx, dy);
-                    if (!recyclerView.canScrollVertically(1)) {
-                        // Carrega mais 10 Pokémons
-                        fetchPokemonList(pokemonFormList.size(), 20);
-                    }
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                if (!recyclerView.canScrollVertically(1)) {
+                    fetchPokemonList(pokemonFormList.size(), 20);
                 }
-            };
-            recyclerView.addOnScrollListener(scrollListener);
-        }
-    }
-
-    private  void removeScrollListener() {
-        if (scrollListener != null) {
-            recyclerView.removeOnScrollListener(scrollListener);
-            scrollListener = null;
-        }
+            }
+        });
     }
 
     private void fetchPokemonList(int offset, int limit) {
@@ -191,12 +156,9 @@ public class PokemonListActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<PokemonListResponse> call, Response<PokemonListResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    // Limpar lista de nomes antes de adicionar novos
                     pokemonNames.clear();
-
                     for (PokemonListResponse.PokemonSummary pokemonSummary : response.body().getResults()) {
                         pokemonNames.add(pokemonSummary.getName());
-                        // Buscar os detalhes de cada Pokémon após adicionar seu nome
                         fetchPokemonForm(pokemonSummary.getName());
                     }
                 } else {
@@ -218,12 +180,7 @@ public class PokemonListActivity extends AppCompatActivity {
             public void onResponse(Call<PokemonFormResponse> call, Response<PokemonFormResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     PokemonFormResponse pokemonForm = response.body();
-
-                    // Verificar se o Pokémon já está na lista
-                    boolean alreadyExists = pokemonFormList.stream()
-                            .anyMatch(existingPokemon -> existingPokemon.getId() == pokemonForm.getId());
-
-                    if (!alreadyExists) {
+                    if (pokemonFormList.stream().noneMatch(existingPokemon -> existingPokemon.getId() == pokemonForm.getId())) {
                         pokemonFormList.add(pokemonForm);
                         pokemonFormList.sort((pokemon1, pokemon2) -> pokemon1.getId() - pokemon2.getId());
                         adapter.updatePokemonList(pokemonFormList);
@@ -243,20 +200,15 @@ public class PokemonListActivity extends AppCompatActivity {
 
     public void searchPokemonByNameOrId(View view) {
         String search = inputSearch.getText().toString().toLowerCase();
-
         if (search.isEmpty()) {
             resetSearch(view);
-
-
         } else {
             removeScrollListener();
-
             PokemonApi.getPokemonForm(search).enqueue(new Callback<PokemonFormResponse>() {
                 @Override
                 public void onResponse(Call<PokemonFormResponse> call, Response<PokemonFormResponse> response) {
                     if (response.isSuccessful() && response.body() != null) {
                         PokemonFormResponse pokemonForm = response.body();
-
                         pokemonFormList.clear();
                         pokemonNames.clear();
                         pokemonFormList.add(pokemonForm);
@@ -282,7 +234,6 @@ public class PokemonListActivity extends AppCompatActivity {
         addScrollListener();
     }
 
-
     public void getImageFromGallery(View view) {
         Intent intent = new Intent(Intent.ACTION_PICK);
         intent.setType("image/*");
@@ -292,5 +243,16 @@ public class PokemonListActivity extends AppCompatActivity {
     public void captureImage(View view) {
         photoUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, new ContentValues());
         captureImageLauncher.launch(photoUri);
+    }
+
+    private void hideKeyboard(View view) {
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+    }
+
+    private void removeScrollListener() {
+        recyclerView.clearOnScrollListeners();
     }
 }

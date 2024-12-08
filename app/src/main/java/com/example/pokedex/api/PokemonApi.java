@@ -16,7 +16,6 @@ import retrofit2.http.Query;
 public class PokemonApi {
 
     private static final String BASE_URL = "https://pokeapi.co/api/v2/";
-
     private static final ApiService apiService;
 
     static {
@@ -28,17 +27,14 @@ public class PokemonApi {
         apiService = retrofit.create(ApiService.class);
     }
 
-    // Interface para os endpoints da API
     public interface ApiService {
 
-        // Endpoint para obter a lista paginada de Pokémons
         @GET("pokemon")
         Call<PokemonListResponse> getPokemonList(
                 @Query("offset") int offset,
                 @Query("limit") int limit
         );
 
-        // Endpoint para obter os detalhes de um Pokémon
         @GET("pokemon/{name}")
         Call<Pokemon> getPokemonDetails(
                 @Path("name") String name
@@ -60,12 +56,10 @@ public class PokemonApi {
         );
     }
 
-    // Método para buscar a lista de Pokémons paginada
     public static Call<PokemonListResponse> getPokemonList(int offset, int limit) {
         return apiService.getPokemonList(offset, limit);
     }
 
-    // Método para buscar os detalhes de um Pokémon
     public static Call<Pokemon> getPokemonDetails(String name) {
         return apiService.getPokemonDetails(name);
     }

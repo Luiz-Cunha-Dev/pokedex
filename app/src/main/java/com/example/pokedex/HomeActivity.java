@@ -20,24 +20,47 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.home);
 
+        initializeUI();
+        playBackgroundMusic();
+    }
+
+    private void initializeUI() {
         enterButton = findViewById(R.id.enter_button);
+    }
+
+    private void playBackgroundMusic() {
         mediaPlayer = MediaPlayer.create(this, R.raw.pokemon_go_title);
         mediaPlayer.setPlaybackParams(mediaPlayer.getPlaybackParams().setSpeed(1.4f));
         mediaPlayer.start();
     }
 
     public void openPokemonListActivity(View view) {
-        enterButton.setEnabled(false);
-        enterButton.setText("Loading...");
-
+        disableEnterButton();
         handler.postDelayed(() -> {
-            enterButton.setText("Welcome :)");
+            updateEnterButtonText("Welcome :)");
             handler.postDelayed(() -> {
-                Intent intent = new Intent(this, PokemonListActivity.class);
-                startActivity(intent);
-                enterButton.setEnabled(true);
-                enterButton.setText("Enter");
+                startPokemonListActivity();
+                resetEnterButton();
             }, 1400);
         }, 600);
+    }
+
+    private void disableEnterButton() {
+        enterButton.setEnabled(false);
+        enterButton.setText("Loading...");
+    }
+
+    private void updateEnterButtonText(String text) {
+        enterButton.setText(text);
+    }
+
+    private void startPokemonListActivity() {
+        Intent intent = new Intent(this, PokemonListActivity.class);
+        startActivity(intent);
+    }
+
+    private void resetEnterButton() {
+        enterButton.setEnabled(true);
+        enterButton.setText("Enter");
     }
 }
